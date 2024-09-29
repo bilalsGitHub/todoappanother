@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Focus Matrix - Eisenhower Task Manager</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: black;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 20px 0;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .quadrant {
+        background-color: #fff;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .quadrant h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .task-list {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      .task-list li {
+        background-color: #e7f3ff;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .task-list li.completed {
+        text-decoration: line-through;
+        background-color: #d4edda;
+      }
+
+      .add-task {
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .add-task input[type="text"] {
+        width: 70%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      .add-task button {
+        padding: 10px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .add-task button:hover {
+        background-color: #0056b3;
+      }
+
+      .task-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .complete-btn,
+      .delete-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 5px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .complete-btn:hover {
+        background-color: #218838;
+      }
+
+      .delete-btn {
+        background-color: #dc3545;
+      }
+
+      .delete-btn:hover {
+        background-color: #c82333;
+      }
+
+      /* Pie chart */
+      .chart-container {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .pie-chart {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background-image: conic-gradient(#28a745 0% 50%, #e74c3c 50% 100%);
+        position: relative;
+      }
+
+      .pie-chart span {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 20px;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Focus Matrix - Eisenhower Task Manager</h1>
+
+    <div class="container">
+      <!-- Quadrant 1: Urgent and Important -->
+      <div class="quadrant">
+        <h2>Urgent & Important</h2>
+        <ul class="task-list" id="q1-tasks">
+          <!-- Task items will be appended here -->
+        </ul>
+        <div class="add-task">
+          <input type="text" id="q1-input" placeholder="Add a task" />
+          <button onclick="addTask(1)">Add</button>
+        </div>
+      </div>
+
+      <!-- Quadrant 2: Not Urgent but Important -->
+      <div class="quadrant">
+        <h2>Not Urgent & Important</h2>
+        <ul class="task-list" id="q2-tasks">
+          <!-- Task items will be appended here -->
+        </ul>
+        <div class="add-task">
+          <input type="text" id="q2-input" placeholder="Add a task" />
+          <button onclick="addTask(2)">Add</button>
+        </div>
+      </div>
+
+      <!-- Quadrant 3: Urgent but Not Important -->
+      <div class="quadrant">
+        <h2>Urgent & Not Important</h2>
+        <ul class="task-list" id="q3-tasks">
+          <!-- Task items will be appended here -->
+        </ul>
+        <div class="add-task">
+          <input type="text" id="q3-input" placeholder="Add a task" />
+          <button onclick="addTask(3)">Add</button>
+        </div>
+      </div>
+
+      <!-- Quadrant 4: Not Urgent and Not Important -->
+      <div class="quadrant">
+        <h2>Not Urgent & Not Important</h2>
+        <ul class="task-list" id="q4-tasks">
+          <!-- Task items will be appended here -->
+        </ul>
+        <div class="add-task">
+          <input type="text" id="q4-input" placeholder="Add a task" />
+          <button onclick="addTask(4)">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie chart -->
+    <div class="chart-container">
+      <div class="pie-chart" id="pieChart">
+        <span id="chartLabel">0% Complete</span>
+      </div>
+    </div>
+
+    <script>
+      let nodeCounter = 0;
+      let completedTasks = 0;
+      let totalTasks = 0;
+
+      // Load tasks from localStorage on page load
+      window.onload = function () {
+        loadTasks();
+      };
+
+      function addTask(quadrant) {
+        const input = document.getElementById(`q${quadrant}-input`);
+        const taskList = document.getElementById(`q${quadrant}-tasks`);
+
+        if (input.value.trim() !== "") {
+          totalTasks++;
+          const task = {
+            id: Date.now(),
+            text: input.value,
+            completed: false,
+          };
+
+          saveTask(quadrant, task);
+          displayTask(quadrant, task);
+          input.value = "";
+          updateChart();
+        }
+      }
+
+      function saveTask(quadrant, task) {
+        let tasks =
+          JSON.parse(localStorage.getItem(`q${quadrant}-tasks`)) || [];
+        tasks.push(task);
+        localStorage.setItem(`q${quadrant}-tasks`, JSON.stringify(tasks));
+      }
+
+      function loadTasks() {
+        for (let i = 1; i <= 4; i++) {
+          const tasks = JSON.parse(localStorage.getItem(`q${i}-tasks`)) || [];
+          totalTasks += tasks.length;
+          tasks.forEach((task) => {
+            displayTask(i, task);
+            if (task.completed) {
+              completedTasks++;
+            }
+          });
+        }
+        updateChart();
+      }
+
+      function displayTask(quadrant, task) {
+        const taskList = document.getElementById(`q${quadrant}-tasks`);
+        const li = document.createElement("li");
+        li.setAttribute("data-id", task.id);
+        li.className = task.completed ? "completed" : "";
+
+        li.innerHTML = `
+        ${task.text}
+        <div class="task-actions">
+          <button class="complete-btn" onclick="toggleComplete(${quadrant}, ${task.id})">Complete</button>
+          <button class="delete-btn" onclick="deleteTask(${quadrant}, ${task.id})">Delete</button>
+        </div>
+      `;
+        taskList.appendChild(li);
+      }
+
+      function toggleComplete(quadrant, taskId) {
+        let tasks =
+          JSON.parse(localStorage.getItem(`q${quadrant}-tasks`)) || [];
+        tasks = tasks.map((task) => {
+          if (task.id === taskId) {
+            task.completed = !task.completed;
+            task.completed ? completedTasks++ : completedTasks--;
+          }
+          return task;
+        });
+        localStorage.setItem(`q${quadrant}-tasks`, JSON.stringify(tasks));
+        refreshTasks();
+        updateChart();
+      }
+
+      function deleteTask(quadrant, taskId) {
+        let tasks =
+          JSON.parse(localStorage.getItem(`q${quadrant}-tasks`)) || [];
+        tasks = tasks.filter((task) => {
+          if (task.id === taskId) {
+            if (task.completed) {
+              completedTasks--;
+            }
+            totalTasks--;
+            return false;
+          }
+          return true;
+        });
+        localStorage.setItem(`q${quadrant}-tasks`, JSON.stringify(tasks));
+        refreshTasks();
+        updateChart();
+      }
+
+      function refreshTasks() {
+        document
+          .querySelectorAll(".task-list")
+          .forEach((list) => (list.innerHTML = ""));
+        loadTasks();
+      }
+
+      // Function to update the pie chart based on task completion
+      function updateChart() {
+        const chartLabel = document.getElementById("chartLabel");
+        const pieChart = document.getElementById("pieChart");
+
+        if (totalTasks === 0) {
+          pieChart.style.backgroundImage = `conic-gradient(#e74c3c 100%, #e74c3c 100%)`;
+          chartLabel.textContent = `0% Complete`;
+          return;
+        }
+
+        let completedPercentage = (completedTasks / totalTasks) * 100;
+        let remainingPercentage = 100 - completedPercentage;
+
+        pieChart.style.backgroundImage = `conic-gradient(#28a745 ${completedPercentage}%, #e74c3c ${completedPercentage}% ${remainingPercentage}%)`;
+        chartLabel.textContent = `${Math.round(completedPercentage)}% Complete`;
+      }
+    </script>
+  </body>
+</html>
